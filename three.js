@@ -25,7 +25,9 @@ function main()
     let pauseOrbits = true;
     let pauseRotations = false;
 
-    let orbitalSpeed = 0.0001;
+    let numMult = 0;
+    let orbitalSpeed = 0.00001;
+    let rotationSpeed = 365.25 * orbitalSpeed;
     let planetSpeeds = 1;
 
 	{
@@ -167,9 +169,11 @@ function main()
                 break;
             case "KeyF":
                 planetSpeeds = planetSpeeds * 2;
-                if(planetSpeeds > 512)
+                numMult++;
+                if(numMult > 15)
                 {
                     planetSpeeds = 1;
+                    numMult = 0
                 }
                 console.log({planetSpeeds});
                 break;
@@ -205,91 +209,127 @@ function main()
     const sunMtl = `objects/sun/sun.mtl`;
     load3dObj(sunOrbit, sunObj, sunMtl, [0.5, 0.5, 0.5]);
     
-    CreateSpotLight(mercuryOrbit, 20, 6);
+    CreateSpotLight(mercuryOrbit, 30, 16);
     const mercury = `objects/mercury/mercury.obj`;
     const mercuryMtl = `objects/mercury/mercury.mtl`;
-    load3dObj(mercuryOrbit, mercury, mercuryMtl, [1.0, 1.0, 1.0], [10, 0, 0]);
+    load3dObj(mercuryOrbit, mercury, mercuryMtl, [1.0, 1.0, 1.0], [20, 0, 0]);
 
-    CreateSpotLight(venusOrbit, 2, 16);
+    CreateSpotLight(venusOrbit, 10, 28, );
     const venus = `objects/venus/venus.obj`;
     const venusMtl = `objects/venus/venus.mtl`;
-    load3dObj(venusOrbit, venus, venusMtl, [3.0, 3.0, 3.0], [20, 0, 0]);
+    load3dObj(venusOrbit, venus, venusMtl, [3.0, 3.0, 3.0], [30, 0, 0]);
 
-    CreateSpotLight(earthOrbit, 5, 26);
+    CreateSpotLight(earthOrbit, 10, 38);
     const earthTexture = 'objects/earth/Color_Map.jpg';
-    const earth = createPlanet(earthOrbit, 0.7, earthTexture, 30);
+    const earth = createPlanet(earthOrbit, 0.7, earthTexture, 40);
     
-    CreateSpotLight(marsOrbit, 10, 36);
+    CreateSpotLight(marsOrbit, 5, 48);
     const mars = `objects/mars/mars.obj`;
     const marsMtl = `objects/mars/mars.mtl`;
-    load3dObj(marsOrbit, mars, marsMtl, [2.0, 2.0, 2.0], [40, 0, 0]);
+    load3dObj(marsOrbit, mars, marsMtl, [2.0, 2.0, 2.0], [50, 0, 0]);
 
-    CreateSpotLight(jupiterOrbit, 50, 50);
+    const asteroidCount = 2000;   // Number of asteroids
+    const innerRadius = 60;       // Inner radius of the belt
+    const outerRadius = 80;       // Outer radius of the belt
+    
+    for (let i = 0; i < asteroidCount; i++) {
+        const size = Math.random() * 0.08 + 0.01;
+        const angle = Math.random() * Math.PI * 2; // Random angle (0 to 360 degrees)
+        const radius = innerRadius + Math.random() * (outerRadius - innerRadius); // Random radius within belt
+        
+        const x = radius * Math.cos(angle);
+        const z = radius * Math.sin(angle);
+        const y = (Math.random() - 0.5) * 5; // Slight vertical variation for realism
+    
+        createAstroid(astroidOrbit, size, [x, y, z]);
+    }
+    
+
+    CreateSpotLight(jupiterOrbit, 50, 85);
     const jupiterTexture = 'objects/jupiter/jupitermap.jpg';
-    const jupiter = createPlanet(jupiterOrbit, 3, jupiterTexture, 60);
+    const jupiter = createPlanet(jupiterOrbit, 3, jupiterTexture, 95);
 
-    CreateSpotLight(saturnOrbit, 50, 65, 1);
+    CreateSpotLight(saturnOrbit, 50, 100, 1);
     const saturnTexture = 'objects/saturn/saturnmap.jpg';
     const saturnRingTexture = 'objects/saturn/saturnring.png';
     
-    // Create a parent group for Saturn's axial tilt
     const saturnTiltGroup = new THREE.Group();
-    saturnTiltGroup.position.set(80, 0, 0);  // Move tilt group to Saturn's orbit
-    saturnOrbit.add(saturnTiltGroup);        // Attach it inside the orbit
+    saturnTiltGroup.position.set(115, 0, 0); 
+    saturnOrbit.add(saturnTiltGroup);        
     
-    // Create Saturn inside the tilt group (positioned at 0,0,0 inside it)
     const saturn = createPlanet(saturnTiltGroup, 3, saturnTexture, 0, {
         innerRadius: 4,
         outerRadius: 6.5,
         texture: saturnRingTexture
     });
     
-    // Apply tilt to the parent group (27° like real Saturn)
     saturnTiltGroup.rotation.z = THREE.MathUtils.degToRad(27);
     
-    CreateSpotLight(uranusOrbit, 40, 90, 1);
+
+    CreateSpotLight(uranusOrbit, 40, 125, 1);
     const uranusTexture = 'objects/uranus/uranus.jpg';
     const uranusRingTexture = 'objects/uranus/uranusring.png';
-    const uranus = createPlanet(uranusOrbit, 3, uranusTexture, 100, {
+    
+    const uranusTiltGroup = new THREE.Group();
+    uranusTiltGroup.position.set(135, 0, 0); 
+    uranusOrbit.add(uranusTiltGroup);        
+    
+    const uranus = createPlanet(uranusTiltGroup, 3, uranusTexture, 0, {
         innerRadius: 4,
         outerRadius: 6.5,
         texture: uranusRingTexture
     });
+    
+    uranusTiltGroup.rotation.z = THREE.MathUtils.degToRad(90);
 
-    CreateSpotLight(neptuneOrbit, 50, 110);
+    /*
+    const uranus = createPlanet(uranusOrbit, 3, uranusTexture, 135, {
+        innerRadius: 4,
+        outerRadius: 6.5,
+        texture: uranusRingTexture
+    });
+    */
+
+    CreateSpotLight(neptuneOrbit, 50, 145);
     const neptuneTexture = 'objects/neptune/neptune.jpg';
-    const neptune = createPlanet(neptuneOrbit, 3, neptuneTexture, 120);
+    const neptune = createPlanet(neptuneOrbit, 3, neptuneTexture, 155);
 
 	function render(time) 
     {
         // Realistic orbital speeds
         if(!pauseOrbits)
         {
-            mercuryOrbit.rotation.y += 1/0.24 * planetSpeeds * orbitalSpeed;
-            venusOrbit.rotation.y += 1/0.62 * planetSpeeds * orbitalSpeed;
-            earthOrbit.rotation.y += 1 * planetSpeeds * orbitalSpeed;
-            marsOrbit.rotation.y += 1/1.88 * planetSpeeds * orbitalSpeed;
-            jupiterOrbit.rotation.y += 1/11.86 * planetSpeeds * orbitalSpeed;
-            saturnOrbit.rotation.y += 1/29.45 * planetSpeeds * orbitalSpeed;
+            mercuryOrbit.rotation.y += (orbitalSpeed / 0.24) * planetSpeeds;  // Mercury orbits in 0.24 Earth years
+            venusOrbit.rotation.y += (orbitalSpeed / 0.62) * planetSpeeds;    // Venus orbits in 0.62 Earth years
+            earthOrbit.rotation.y += (orbitalSpeed / 1.00) * planetSpeeds;    // Earth orbits in 1 year
+            marsOrbit.rotation.y += (orbitalSpeed / 1.88) * planetSpeeds;     // Mars orbits in 1.88 Earth years
+            astroidOrbit.rotation.y += (orbitalSpeed / 4) * planetSpeeds;
 
-            // Counteract orbital rotation so tilt remains constant in space
+            jupiterOrbit.rotation.y += (orbitalSpeed / 11.86) * planetSpeeds; // Jupiter orbits in 11.86 Earth years
+
+            saturnOrbit.rotation.y += (orbitalSpeed / 29.45) * planetSpeeds;  // Saturn orbits in 29.45 Earth years
             saturnTiltGroup.rotation.y -= 1/29.45 * planetSpeeds * orbitalSpeed;
-            uranusOrbit.rotation.y += 1/84 * planetSpeeds * orbitalSpeed;
-            neptuneOrbit.rotation.y += 1/165 * planetSpeeds * orbitalSpeed;
+
+            uranusOrbit.rotation.y += (orbitalSpeed / 84.00) * planetSpeeds;  // Uranus orbits in 84 Earth years
+            uranusTiltGroup.rotation.y -= 1/84.00 * planetSpeeds * orbitalSpeed;
+
+            neptuneOrbit.rotation.y += (orbitalSpeed / 165.00) * planetSpeeds;// Neptune orbits in 165 Earth years
         }
 
         // Rotate all planets inside their orbits (spinning on axis)
         if(!pauseRotations)
         {
-            sunOrbit.children.forEach(obj => obj.rotation.y += 0.002 * planetSpeeds);
-            mercuryOrbit.children.forEach(obj => obj.rotation.y += 0.0008 * planetSpeeds);
-            venusOrbit.children.forEach(obj => obj.rotation.y += 0.015 * planetSpeeds);
-            earthOrbit.children.forEach(obj => obj.rotation.y += 0.01 * planetSpeeds);
-            marsOrbit.children.forEach(obj => obj.rotation.y += 0.008 * planetSpeeds);
-            jupiterOrbit.children.forEach(obj => obj.rotation.y += 0.004 * planetSpeeds);
-            saturn.obj.rotation.y += 0.003 * planetSpeeds;
-            uranusOrbit.children.forEach(obj => obj.rotation.y += 0.002 * planetSpeeds);
-            neptuneOrbit.children.forEach(obj => obj.rotation.y += 0.001 * planetSpeeds);
+            sunOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed / 30 * planetSpeeds);
+            mercuryOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed / 58.6 * planetSpeeds);
+            venusOrbit.children.forEach(obj => obj.rotation.y -= rotationSpeed / 243 * planetSpeeds);
+            earthOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed * planetSpeeds);
+            marsOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed / 1.03 * planetSpeeds);
+            jupiterOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed / 0.41 * planetSpeeds);
+            saturn.obj.rotation.y += rotationSpeed / 0.44 * planetSpeeds;
+            uranus.obj.rotation.y += rotationSpeed / 0.72 * planetSpeeds;
+
+            //uranusOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed / 0.72 * planetSpeeds);
+            neptuneOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed / 0.67 * planetSpeeds);
         }
 
 		if ( resizeRendererToDisplaySize( renderer ) ) 
@@ -308,10 +348,10 @@ function main()
 
 main();
 
-function CreateSpotLight(orbit, intensity, position, hieght = 0)
+function CreateSpotLight(orbit, intensity, position, hieght = 0, color = 0xFFFFFF)
 {
     const light = new THREE.SpotLight(
-        0xFFFFFF,   // Color
+        color,   // Color
         intensity,          // Intensity (Brightness)
         20,        // Distance (Falloff starts here)
         Math.PI / 2, // Angle (Spread of the light cone)
@@ -382,4 +422,21 @@ function createPlanet(scene, size, texture, position, ring) {
     obj.position.set(position, 0, 0);
     scene.add(obj);
     return { mesh, obj };
+}
+
+function createAstroid(scene, size, position, texture = null)
+{
+    const geo = new THREE.SphereGeometry(size, 5, 5);
+    const textureLoader = new THREE.TextureLoader();
+    
+    const mat = new THREE.MeshBasicMaterial(
+        texture ? { map: textureLoader.load(texture) } : { color: 0x888888 } // Default gray color if no texture
+    );
+
+    const mesh = new THREE.Mesh(geo, mat);
+    const obj = new THREE.Object3D();
+    obj.add(mesh);
+
+    obj.position.set(position[0], position[1], position[2]);
+    scene.add(obj);
 }
