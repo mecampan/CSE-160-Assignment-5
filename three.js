@@ -26,7 +26,7 @@ function main()
     let pauseRotations = false;
 
     let numMult = 0;
-    let orbitalSpeed = 0.00001;
+    let orbitalSpeed = 0.0001;
     let rotationSpeed = 365.25 * orbitalSpeed;
     let planetSpeeds = 1;
 
@@ -208,25 +208,31 @@ function main()
     const sunObj = `objects/sun/sun.obj`;
     const sunMtl = `objects/sun/sun.mtl`;
     load3dObj(sunOrbit, sunObj, sunMtl, [0.5, 0.5, 0.5]);
-    
+	makeLabel(scene, 0, 15, 1000, 200, 'Sun', 'black' );
+
+
     CreateSpotLight(mercuryOrbit, 30, 16);
     const mercury = `objects/mercury/mercury.obj`;
     const mercuryMtl = `objects/mercury/mercury.mtl`;
     load3dObj(mercuryOrbit, mercury, mercuryMtl, [1.0, 1.0, 1.0], [20, 0, 0]);
+	makeLabel(mercuryOrbit, 20, 3, 1000, 200, 'Mercury', 'black', false );
 
     CreateSpotLight(venusOrbit, 10, 28, );
     const venus = `objects/venus/venus.obj`;
     const venusMtl = `objects/venus/venus.mtl`;
     load3dObj(venusOrbit, venus, venusMtl, [3.0, 3.0, 3.0], [30, 0, 0]);
+	makeLabel(venusOrbit, 30, 3, 1000, 200, 'Venus', 'black', false );
 
     CreateSpotLight(earthOrbit, 10, 38);
     const earthTexture = 'objects/earth/Color_Map.jpg';
     const earth = createPlanet(earthOrbit, 0.7, earthTexture, 40);
-    
+    makeLabel(earthOrbit, 40, 3, 1000, 200, 'Earth', 'black', false );
+
     CreateSpotLight(marsOrbit, 5, 48);
     const mars = `objects/mars/mars.obj`;
     const marsMtl = `objects/mars/mars.mtl`;
     load3dObj(marsOrbit, mars, marsMtl, [2.0, 2.0, 2.0], [50, 0, 0]);
+    makeLabel(marsOrbit, 50, 3, 1000, 200, 'Mars', 'black', false );
 
     const asteroidCount = 2000;   // Number of asteroids
     const innerRadius = 60;       // Inner radius of the belt
@@ -248,6 +254,7 @@ function main()
     CreateSpotLight(jupiterOrbit, 50, 85);
     const jupiterTexture = 'objects/jupiter/jupitermap.jpg';
     const jupiter = createPlanet(jupiterOrbit, 3, jupiterTexture, 95);
+    makeLabel(jupiterOrbit, 95, 8, 1000, 200, 'Jupiter', 'black', false );
 
     CreateSpotLight(saturnOrbit, 50, 100, 1);
     const saturnTexture = 'objects/saturn/saturnmap.jpg';
@@ -264,7 +271,8 @@ function main()
     });
     
     saturnTiltGroup.rotation.z = THREE.MathUtils.degToRad(27);
-    
+    makeLabel(saturnOrbit, 115, 8, 1000, 200, 'Saturn', 'black', false );
+
 
     CreateSpotLight(uranusOrbit, 40, 125, 1);
     const uranusTexture = 'objects/uranus/uranus.jpg';
@@ -281,18 +289,13 @@ function main()
     });
     
     uranusTiltGroup.rotation.z = THREE.MathUtils.degToRad(90);
+    makeLabel(uranusOrbit, 135, 8, 1000, 200, 'Uranus', 'black', false );
 
-    /*
-    const uranus = createPlanet(uranusOrbit, 3, uranusTexture, 135, {
-        innerRadius: 4,
-        outerRadius: 6.5,
-        texture: uranusRingTexture
-    });
-    */
 
     CreateSpotLight(neptuneOrbit, 50, 145);
     const neptuneTexture = 'objects/neptune/neptune.jpg';
     const neptune = createPlanet(neptuneOrbit, 3, neptuneTexture, 155);
+    makeLabel(neptuneOrbit, 155, 8, 1000, 200, 'Neptune', 'black', false );
 
 	function render(time) 
     {
@@ -439,4 +442,50 @@ function createAstroid(scene, size, position, texture = null)
 
     obj.position.set(position[0], position[1], position[2]);
     scene.add(obj);
+}
+
+
+function makeLabel(scene, x, y, labelWidth, size, name, color = 'blue', rect = true) {
+    const canvas = makeLabelCanvas(labelWidth, size, name, color, rect);
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+
+    const labelMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const label = new THREE.Sprite(labelMaterial);
+    
+    label.position.set(x, y, 0); // Directly set position on label itself
+
+    // Scale label size relative to its canvas dimensions
+    label.scale.set(canvas.width * 0.01, canvas.height * 0.01, 1);
+
+    scene.add(label);
+    return label;
+}
+
+function makeLabelCanvas(baseWidth, size, name, color, rect) {
+    const ctx = document.createElement('canvas').getContext('2d');
+    ctx.font = `${size}px bold sans-serif`;
+
+    const textWidth = ctx.measureText(name).width;
+    const width = baseWidth + 4;
+    const height = size + 4;
+
+    ctx.canvas.width = width;
+    ctx.canvas.height = height;
+    ctx.font = `${size}px bold sans-serif`;
+
+    if(rect)
+    {
+        ctx.fillStyle = color;
+        ctx.fillRect(0, 0, width, height);
+    }
+
+    ctx.fillStyle = 'white';
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    ctx.fillText(name, width / 2, height / 2);
+
+    return ctx.canvas;
 }
