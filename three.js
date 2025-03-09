@@ -1,3 +1,16 @@
+// Credits
+// Spaceship Model Provided by javier8 https://free3d.com/3d-model/low-poly-spaceship-37605.html
+// Sun Model Provided by printable_models https://free3d.com/3d-model/sun-v2--446713.html
+// Mercury Model Provided by gerhald3d https://free3d.com/3d-model/mercury-photorealistic-1k-260439.html
+// Earth Model Provided by themi97 https://free3d.com/3d-model/photorealistic-earth-98256.html
+// Mars Model Provided by gerhald3d https://free3d.com/3d-model/mars-photorealistic-2k-671043.html
+// Jupiter Model Provided by ali_alkendi https://free3d.com/3d-model/jupiter-planet-4448.html
+// Saturn Model Provided by ali_alkendi https://free3d.com/3d-model/saturn-planet-8840.html
+// Saturn Ring Texture Provided by Niko22966 https://www.deviantart.com/niko22966/art/Rings-of-Saturn-419585311
+// Uranus Model Provided by jmbosch https://free3d.com/3d-model/uranus-75291.html
+// Uranus Ring Texture Provided by blackstaviru64 https://favpng.com/png_view/uranus-the-trooth-texture-mapping-planet-mykolaiv-png/0rw9hFBt
+// Neptune Model Provided by jmbosch https://free3d.com/3d-model/neptune-82847.html
+
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
