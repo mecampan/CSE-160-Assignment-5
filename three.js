@@ -22,7 +22,7 @@ function main()
 	const scene = new THREE.Scene();
 	scene.background = new THREE.Color( 'black' );
 
-    let cameraSwap = true;
+    let cameraSwap = false;
 
     let pauseOrbits = false;
     let pauseRotations = false;
@@ -48,9 +48,9 @@ function main()
                 pauseRotations =! pauseRotations;
                 break;
             case "KeyF":
-                planetSpeeds = planetSpeeds * 2;
+                planetSpeeds = planetSpeeds * 4;
                 numMult++;
-                if(numMult > 15)
+                if(numMult > 5)
                 {
                     planetSpeeds = 1;
                     numMult = 0
@@ -106,10 +106,18 @@ function main()
     
 
     const spaceShip = new THREE.Group();
-    spaceShip.position.set(35, 0, 0);
+    spaceShip.position.set(32, 0, 5);
+    spaceShip.rotation.y = 19.5;
 	scene.add( spaceShip );
 
-    CreateSpotLight(spaceShip, 50, 0, 1);
+    //CreateSpotLight(spaceShip, 50, 0, 1);
+	{
+		const color = 0xFFFFFF;
+		const intensity = 3;
+		const light = new THREE.PointLight( color, intensity );
+        light.position.set(0, 0, 1);
+		spaceShip.add( light );
+	}
 
     const rotationObj = new THREE.Group();
     rotationObj.rotateY(1.5);
@@ -476,7 +484,6 @@ function load3dObj(scene, name, objPath, mtlPath, scale = 1, translate = [0, 0, 
             root.traverse((child) => {
                 if (child.isMesh && !named) {
                     child.name = name; // Assign the name to the first mesh found
-                    console.log(`Mesh assigned name: ${child.name}`);
                     named = true; // Stop after naming the first mesh
                 }
             });
