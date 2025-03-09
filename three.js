@@ -16,32 +16,21 @@ function main()
 	camera.position.set( 0, 10, 80 );
 
 	const controls = new OrbitControls( camera, canvas );
-	controls.target.set( 50, 5, 0 );
+	controls.target.set( 0, 0, 0 );
 	controls.update();
 
 	const scene = new THREE.Scene();
 	scene.background = new THREE.Color( 'black' );
 
-    let pauseOrbits = true;
+    let cameraSwap = true;
+
+    let pauseOrbits = false;
     let pauseRotations = false;
 
     let numMult = 0;
-    let orbitalSpeed = 0.0001;
+    let orbitalSpeed = 0.00001;
     let rotationSpeed = 365.25 * orbitalSpeed;
     let planetSpeeds = 1;
-
-	{
-		const loader = new THREE.CubeTextureLoader();
-		const texture = loader.load( [
-			'images/stars.jpg',
-			'images/stars.jpg',
-			'images/stars.jpg',
-			'images/stars.jpg',
-			'images/stars.jpg',
-			'images/stars.jpg'
-		] );
-		scene.background = texture;
-	}
 
 	{
 		const color = 0xFFFFFF;
@@ -49,71 +38,9 @@ function main()
 		const light = new THREE.AmbientLight( color, intensity );
 		scene.add( light );
 	}
-    
-
-	{
-		const color = 0xFFFFFF;
-		const intensity = 1000;
-		const light = new THREE.SpotLight( color, intensity );
-		light.position.set( 0, 10, 0 );
-		light.target.position.set( - 5, 0, 0 );
-		//scene.add( light );
-		//scene.add( light.target );
-
-		function updateLight() 
-        {
-			//light.target.updateMatrixWorld();
-		}
-
-		//updateLight();
-	}
-
-    {
-        const sphereRadius = 3;
-        const sphereWidthDivisions = 32;
-        const sphereHeightDivisions = 16;
-        const sphereGeo = new THREE.SphereGeometry(sphereRadius, sphereWidthDivisions, sphereHeightDivisions);
-        const sphereMat = new THREE.MeshPhongMaterial({color: '#CA8'});
-        const mesh = new THREE.Mesh(sphereGeo, sphereMat);
-        mesh.position.set(-sphereRadius - 4, sphereRadius + 2, 0);
-        //scene.add(mesh);
-    }
-
-	{
-		const mtlLoader = new MTLLoader();
-		mtlLoader.load( 'https://threejs.org/manual/examples/resources/models/windmill/windmill-fixed.mtl', ( mtl ) => 
-        {
-			mtl.preload();
-			const objLoader = new OBJLoader();
-			mtl.materials.Material.side = THREE.DoubleSide;
-			objLoader.setMaterials( mtl );
-			objLoader.load( 'https://threejs.org/manual/examples/resources/models/windmill/windmill.obj', ( root ) => 
-            {
-				//scene.add( root );
-			} );
-		} );
-	}
-    
-    const cameraSpeed = 5;
 
     document.addEventListener("keydown", (event) => {
-        const direction = new THREE.Vector3();
-        camera.getWorldDirection(direction); // Get the forward direction the camera is facing
-        const right = new THREE.Vector3().crossVectors(camera.up, direction).normalize(); // Get right direction
-    
         switch (event.code) {
-            case "KeyW": // Move forward
-                camera.position.addScaledVector(direction, cameraSpeed);
-                break;
-            case "KeyS": // Move backward
-                camera.position.addScaledVector(direction, -cameraSpeed);
-                break;
-            case "KeyA": // Move left
-                camera.position.addScaledVector(right, cameraSpeed);
-                break;
-            case "KeyD": // Move right
-                camera.position.addScaledVector(right, -cameraSpeed);
-                break;
             case "KeyO": // Pause orbits
                 pauseOrbits =! pauseOrbits;
                 break;
@@ -130,9 +57,40 @@ function main()
                 }
                 console.log({planetSpeeds});
                 break;
+            case "KeyC":
+                cameraSwap =! cameraSwap;
+                console.log(cameraSwap);
+                break;
         }
     });
-    
+
+	{
+		const loader = new THREE.CubeTextureLoader();
+		const texture = loader.load( [
+			'images/stars.jpg',
+			'images/stars.jpg',
+			'images/stars.jpg',
+			'images/stars.jpg',
+			'images/stars.jpg',
+			'images/stars.jpg'
+		] );
+		scene.background = texture;
+	}
+
+	{
+		const mtlLoader = new MTLLoader();
+		mtlLoader.load( 'https://threejs.org/manual/examples/resources/models/windmill/windmill-fixed.mtl', ( mtl ) => 
+        {
+			mtl.preload();
+			const objLoader = new OBJLoader();
+			mtl.materials.Material.side = THREE.DoubleSide;
+			objLoader.setMaterials( mtl );
+			objLoader.load( 'https://threejs.org/manual/examples/resources/models/windmill/windmill.obj', ( root ) => 
+            {
+				//scene.add( root );
+			} );
+		} );
+	}
     
 	function resizeRendererToDisplaySize( renderer ) 
     {
@@ -145,6 +103,77 @@ function main()
 		
 		return needResize;
 	}
+    
+
+    const spaceShip = new THREE.Group();
+    spaceShip.position.set(35, 0, 0);
+	scene.add( spaceShip );
+
+    CreateSpotLight(spaceShip, 50, 0, 1);
+
+    const rotationObj = new THREE.Group();
+    rotationObj.rotateY(1.5);
+    spaceShip.add(rotationObj);
+
+    const spaceshipObj = `objects/spaceship/spaceship.obj`;
+    const spaceshipMtl = `objects/spaceship/spaceship.mtl`;
+    load3dObj(rotationObj, "spaceShip", spaceshipObj, spaceshipMtl, 0.2, [0, 0, 0], true);
+	
+    const camera2 = new THREE.PerspectiveCamera( fov, aspect, near, far );
+    camera2.position.set(0.3, 0, 0);
+    camera2.lookAt(new THREE.Vector3(90, 0, 0));
+    spaceShip.add(camera2);
+
+    // Spaceship movement variables
+    let velocity = new THREE.Vector3();  // Current velocity
+    let acceleration = new THREE.Vector3(); // Current acceleration
+    const maxSpeed = 0.1;  // Max speed limit
+    const accelerationRate = 0.01 / 3; // Acceleration increment
+    const dragFactor = 0.98; // Drag to gradually slow down
+    const shipRotation = THREE.MathUtils.degToRad(1); // Rotation speed
+
+    // Track which keys are currently held down
+    const keys = {};
+
+    // Event listeners to track key state
+    document.addEventListener("keydown", (event) => keys[event.code] = true);
+    document.addEventListener("keyup", (event) => keys[event.code] = false);
+
+    function updateSpaceshipMovement() {
+        // Reset acceleration
+        acceleration.set(0, 0, 0);
+
+        // Get the ship's local forward direction (X-axis)
+        const forward = new THREE.Vector3(1, 0, 0); 
+        forward.applyQuaternion(spaceShip.quaternion); // Align with ship's rotation
+
+        // Apply acceleration based on keys held down
+        if (keys["KeyW"]) { // Move forward
+            acceleration.addScaledVector(forward, accelerationRate);
+        }
+        if (keys["KeyS"]) { // Move backward
+            acceleration.addScaledVector(forward, -accelerationRate);
+        }
+        if (keys["KeyA"]) { // Rotate left
+            spaceShip.rotateY(shipRotation);
+        }
+        if (keys["KeyD"]) { // Rotate right
+            spaceShip.rotateY(-shipRotation);
+        }
+
+        // Apply acceleration to velocity
+        velocity.add(acceleration);
+
+        // Clamp velocity to max speed
+        velocity.clampLength(0, maxSpeed);
+
+        // Apply velocity to spaceship position
+        spaceShip.position.add(velocity);
+
+        // Apply drag to gradually slow down
+        velocity.multiplyScalar(dragFactor);
+    }
+
 
     const sunOrbit = new THREE.Group();
     const mercuryOrbit = new THREE.Group();
@@ -160,20 +189,20 @@ function main()
 
     const sunObj = `objects/sun/sun.obj`;
     const sunMtl = `objects/sun/sun.mtl`;
-    load3dObj(sunOrbit, "sun", sunObj, sunMtl, [0.5, 0.5, 0.5]);
+    load3dObj(sunOrbit, "sun", sunObj, sunMtl, 0.5, [0, 0, 0], false);
 	makeLabel(scene, 0, 15, 1000, 200, 'Sun', 'black', false );
     createGlowSprite(sunOrbit, 0, 30);
 
     CreateSpotLight(mercuryOrbit, 30, 16);
     const mercury = `objects/mercury/mercury.obj`;
     const mercuryMtl = `objects/mercury/mercury.mtl`;
-    load3dObj(mercuryOrbit, "mercury", mercury, mercuryMtl, [1.0, 1.0, 1.0], [20, 0, 0]);
+    load3dObj(mercuryOrbit, "mercury", mercury, mercuryMtl, 1.0, [20, 0, 0]);
 	makeLabel(mercuryOrbit, 20, 3, 1000, 200, 'Mercury', 'black', false );
 
     CreateSpotLight(venusOrbit, 10, 28, );
     const venus = `objects/venus/venus.obj`;
     const venusMtl = `objects/venus/venus.mtl`;
-    load3dObj(venusOrbit, "venus", venus, venusMtl, [3.0, 3.0, 3.0], [30, 0, 0]);
+    load3dObj(venusOrbit, "venus", venus, venusMtl, 3.0, [30, 0, 0]);
 	makeLabel(venusOrbit, 30, 3, 1000, 200, 'Venus', 'black', false );
 
     CreateSpotLight(earthOrbit, 10, 38);
@@ -184,7 +213,7 @@ function main()
     CreateSpotLight(marsOrbit, 5, 48);
     const mars = `objects/mars/mars.obj`;
     const marsMtl = `objects/mars/mars.mtl`;
-    load3dObj(marsOrbit, "mars", mars, marsMtl, [2.0, 2.0, 2.0], [50, 0, 0]);
+    load3dObj(marsOrbit, "mars", mars, marsMtl, 2.0, [50, 0, 0]);
     makeLabel(marsOrbit, 50, 3, 1000, 200, 'Mars', 'black', false );
 
     const asteroidCount = 2000;   // Number of asteroids
@@ -250,7 +279,6 @@ function main()
     const neptune = createPlanet(neptuneOrbit, "neptune", 3, neptuneTexture, 155);
     makeLabel(neptuneOrbit, 155, 8, 1000, 200, 'Neptune', 'black', false );
 
-
     const sunGlow = createGlowSprite(scene, 0, 30);
     const mercuryGlow = createGlowSprite(mercuryOrbit, 20, 1);
     const venusGlow = createGlowSprite(venusOrbit, 30, 2.5);
@@ -303,9 +331,10 @@ function main()
 	const pickHelper = new PickHelper();
 	clearPickPosition();
 
-
 	function render(time) 
     {
+        updateSpaceshipMovement();
+
         // Realistic orbital speeds
         if(!pauseOrbits)
         {
@@ -342,16 +371,22 @@ function main()
             neptuneOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed / 0.67 * planetSpeeds);
         }
 
+        let whichCamera = camera;
+        if(cameraSwap)
+        {
+            whichCamera = camera2;
+        }
+
 		if ( resizeRendererToDisplaySize( renderer ) ) 
         {
 			const canvas = renderer.domElement;
-			camera.aspect = canvas.clientWidth / canvas.clientHeight;
-			camera.updateProjectionMatrix();
+			whichCamera.aspect = canvas.clientWidth / canvas.clientHeight;
+			whichCamera.updateProjectionMatrix();
 		}
 
-		pickHelper.pick( pickPosition, scene, camera, time );
+		pickHelper.pick( pickPosition, scene, whichCamera, time );
+		renderer.render( scene, whichCamera );
 
-		renderer.render( scene, camera );
 		requestAnimationFrame( render );
 	}
 
@@ -367,12 +402,11 @@ function main()
 
 	}
 
-	function setPickPosition( event ) {
-
+	function setPickPosition( event ) 
+    {
 		const pos = getCanvasRelativePosition( event );
 		pickPosition.x = ( pos.x / canvas.width ) * 2 - 1;
 		pickPosition.y = ( pos.y / canvas.height ) * - 2 + 1; // note we flip Y
-
 	}
 
 	function clearPickPosition() {
@@ -426,7 +460,7 @@ function CreateSpotLight(orbit, intensity, position, hieght = 0, color = 0xFFFFF
     orbit.add(light.target);
 }
 
-function load3dObj(scene, name, objPath, mtlPath, scale = [1, 1, 1], translate = [0, 0, 0]) {
+function load3dObj(scene, name, objPath, mtlPath, scale = 1, translate = [0, 0, 0], useLighting = true) {
     const mtlLoader = new MTLLoader();
     mtlLoader.load(mtlPath, (mtl) => {
         mtl.preload();
@@ -434,7 +468,7 @@ function load3dObj(scene, name, objPath, mtlPath, scale = [1, 1, 1], translate =
         objLoader.setMaterials(mtl);
         objLoader.load(objPath, (root) => {
             root.name = name;
-            root.scale.set(scale[0], scale[1], scale[2]);
+            root.scale.set(scale, scale, scale);
             root.position.set(translate[0], translate[1], translate[2]);
 
             let named = false; // Track if at least one mesh was named
@@ -452,7 +486,7 @@ function load3dObj(scene, name, objPath, mtlPath, scale = [1, 1, 1], translate =
             }
 
             // If this is the Sun, force `MeshBasicMaterial` to prevent lighting effects
-            if (objPath.includes("sun")) {
+            if (!useLighting) {
                 root.traverse((child) => {
                     if (child.isMesh) {
                         child.material = new THREE.MeshBasicMaterial({
