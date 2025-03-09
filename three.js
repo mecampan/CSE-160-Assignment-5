@@ -31,53 +31,6 @@ function main()
     let planetSpeeds = 1;
 
 	{
-		const planeSize = 40;
-
-		const loader = new THREE.TextureLoader();
-		const texture = loader.load( 'https://threejs.org/manual/examples/resources/images/checker.png' );
-		texture.colorSpace = THREE.SRGBColorSpace;
-		texture.wrapS = THREE.RepeatWrapping;
-		texture.wrapT = THREE.RepeatWrapping;
-		texture.magFilter = THREE.NearestFilter;
-		const repeats = planeSize / 2;
-		texture.repeat.set( repeats, repeats );
-
-		const planeGeo = new THREE.PlaneGeometry( planeSize, planeSize );
-		const planeMat = new THREE.MeshPhongMaterial( {
-			map: texture,
-			side: THREE.DoubleSide,
-		} );
-		const mesh = new THREE.Mesh( planeGeo, planeMat );
-		mesh.rotation.x = Math.PI * - .5;
-		//scene.add( mesh );
-	}
-
-	const boxWidth = 1;
-	const boxHeight = 1;
-	const boxDepth = 1;
-	const geometry = new THREE.BoxGeometry( boxWidth, boxHeight, boxDepth );
-
-	function makeInstance( geometry, color, x ) 
-    {
-		const material = new THREE.MeshPhongMaterial( { color } );
-
-		const cube = new THREE.Mesh( geometry, material );
-		scene.add( cube );
-
-		cube.position.x = x;
-
-		return cube;
-	}
-
-	/*
-    const cubes = [
-		makeInstance( geometry, 0x44aa88, 0 ),
-		makeInstance( geometry, 0x8844aa, - 2 ),
-		makeInstance( geometry, 0xaa8844, 2 ),
-	];
-    */
-
-	{
 		const loader = new THREE.CubeTextureLoader();
 		const texture = loader.load( [
 			'images/stars.jpg',
@@ -92,7 +45,7 @@ function main()
 
 	{
 		const color = 0xFFFFFF;
-		const intensity = 0.005;//0.005;
+		const intensity = 0.005;
 		const light = new THREE.AmbientLight( color, intensity );
 		scene.add( light );
 	}
@@ -207,31 +160,31 @@ function main()
 
     const sunObj = `objects/sun/sun.obj`;
     const sunMtl = `objects/sun/sun.mtl`;
-    load3dObj(sunOrbit, sunObj, sunMtl, [0.5, 0.5, 0.5]);
-	makeLabel(scene, 0, 15, 1000, 200, 'Sun', 'black' );
-
+    load3dObj(sunOrbit, "sun", sunObj, sunMtl, [0.5, 0.5, 0.5]);
+	makeLabel(scene, 0, 15, 1000, 200, 'Sun', 'black', false );
+    createGlowSprite(sunOrbit, 0, 30);
 
     CreateSpotLight(mercuryOrbit, 30, 16);
     const mercury = `objects/mercury/mercury.obj`;
     const mercuryMtl = `objects/mercury/mercury.mtl`;
-    load3dObj(mercuryOrbit, mercury, mercuryMtl, [1.0, 1.0, 1.0], [20, 0, 0]);
+    load3dObj(mercuryOrbit, "mercury", mercury, mercuryMtl, [1.0, 1.0, 1.0], [20, 0, 0]);
 	makeLabel(mercuryOrbit, 20, 3, 1000, 200, 'Mercury', 'black', false );
 
     CreateSpotLight(venusOrbit, 10, 28, );
     const venus = `objects/venus/venus.obj`;
     const venusMtl = `objects/venus/venus.mtl`;
-    load3dObj(venusOrbit, venus, venusMtl, [3.0, 3.0, 3.0], [30, 0, 0]);
+    load3dObj(venusOrbit, "venus", venus, venusMtl, [3.0, 3.0, 3.0], [30, 0, 0]);
 	makeLabel(venusOrbit, 30, 3, 1000, 200, 'Venus', 'black', false );
 
     CreateSpotLight(earthOrbit, 10, 38);
     const earthTexture = 'objects/earth/Color_Map.jpg';
-    const earth = createPlanet(earthOrbit, 0.7, earthTexture, 40);
+    const earth = createPlanet(earthOrbit, "earth", 0.7, earthTexture, 40);
     makeLabel(earthOrbit, 40, 3, 1000, 200, 'Earth', 'black', false );
 
     CreateSpotLight(marsOrbit, 5, 48);
     const mars = `objects/mars/mars.obj`;
     const marsMtl = `objects/mars/mars.mtl`;
-    load3dObj(marsOrbit, mars, marsMtl, [2.0, 2.0, 2.0], [50, 0, 0]);
+    load3dObj(marsOrbit, "mars", mars, marsMtl, [2.0, 2.0, 2.0], [50, 0, 0]);
     makeLabel(marsOrbit, 50, 3, 1000, 200, 'Mars', 'black', false );
 
     const asteroidCount = 2000;   // Number of asteroids
@@ -253,7 +206,7 @@ function main()
 
     CreateSpotLight(jupiterOrbit, 50, 85);
     const jupiterTexture = 'objects/jupiter/jupitermap.jpg';
-    const jupiter = createPlanet(jupiterOrbit, 3, jupiterTexture, 95);
+    const jupiter = createPlanet(jupiterOrbit, "jupiter", 3, jupiterTexture, 95);
     makeLabel(jupiterOrbit, 95, 8, 1000, 200, 'Jupiter', 'black', false );
 
     CreateSpotLight(saturnOrbit, 50, 100, 1);
@@ -264,7 +217,7 @@ function main()
     saturnTiltGroup.position.set(115, 0, 0); 
     saturnOrbit.add(saturnTiltGroup);        
     
-    const saturn = createPlanet(saturnTiltGroup, 3, saturnTexture, 0, {
+    const saturn = createPlanet(saturnTiltGroup, "saturn", 3, saturnTexture, 0, {
         innerRadius: 4,
         outerRadius: 6.5,
         texture: saturnRingTexture
@@ -282,7 +235,7 @@ function main()
     uranusTiltGroup.position.set(135, 0, 0); 
     uranusOrbit.add(uranusTiltGroup);        
     
-    const uranus = createPlanet(uranusTiltGroup, 3, uranusTexture, 0, {
+    const uranus = createPlanet(uranusTiltGroup, "uranus", 3, uranusTexture, 0, {
         innerRadius: 4,
         outerRadius: 6.5,
         texture: uranusRingTexture
@@ -294,8 +247,62 @@ function main()
 
     CreateSpotLight(neptuneOrbit, 50, 145);
     const neptuneTexture = 'objects/neptune/neptune.jpg';
-    const neptune = createPlanet(neptuneOrbit, 3, neptuneTexture, 155);
+    const neptune = createPlanet(neptuneOrbit, "neptune", 3, neptuneTexture, 155);
     makeLabel(neptuneOrbit, 155, 8, 1000, 200, 'Neptune', 'black', false );
+
+
+    const sunGlow = createGlowSprite(scene, 0, 30);
+    const mercuryGlow = createGlowSprite(mercuryOrbit, 20, 1);
+    const venusGlow = createGlowSprite(venusOrbit, 30, 2.5);
+    const earthGlow = createGlowSprite(earthOrbit, 40, 2.5);
+    const marsGlow = createGlowSprite(marsOrbit, 50, 2);
+    const jupiterGlow = createGlowSprite(jupiterOrbit, 95, 9);
+    const saturnGlow = createGlowSprite(saturnOrbit, 115, 9);
+    const uranusGlow = createGlowSprite(uranusOrbit, 135, 9);
+    const neptuneGlow = createGlowSprite(neptuneOrbit, 155, 9);
+
+    const glowSprites = {
+        sun: sunGlow,
+        mercury: mercuryGlow,
+        venus: venusGlow,
+        earth: earthGlow,
+        mars: marsGlow,
+        jupiter: jupiterGlow,
+        saturn: saturnGlow,
+        uranus: uranusGlow,
+        neptune: neptuneGlow
+    };
+
+    class PickHelper {
+        constructor() {
+            this.raycaster = new THREE.Raycaster();
+            this.pickedObject = null;
+        }
+    
+        pick(normalizedPosition, scene, camera) {
+            // Reset all glow sprites (hide them)
+            Object.values(glowSprites).forEach(sprite => sprite.visible = false);
+    
+            // Cast a ray through the frustum
+            this.raycaster.setFromCamera(normalizedPosition, camera);
+            const intersectedObjects = this.raycaster.intersectObjects(scene.children);
+            
+            if (intersectedObjects.length) {
+                this.pickedObject = intersectedObjects[0].object;
+                const objectName = this.pickedObject.name.toLowerCase(); // Ensure match with glowSprites keys
+    
+                // If a glow sprite exists for this object, show it
+                if (glowSprites[objectName]) {
+                    glowSprites[objectName].visible = true;
+                }
+            }
+        }
+    }
+
+	const pickPosition = { x: 0, y: 0 };
+	const pickHelper = new PickHelper();
+	clearPickPosition();
+
 
 	function render(time) 
     {
@@ -342,11 +349,63 @@ function main()
 			camera.updateProjectionMatrix();
 		}
 
+		pickHelper.pick( pickPosition, scene, camera, time );
+
 		renderer.render( scene, camera );
 		requestAnimationFrame( render );
 	}
 
 	requestAnimationFrame( render );
+
+	function getCanvasRelativePosition( event ) {
+
+		const rect = canvas.getBoundingClientRect();
+		return {
+			x: ( event.clientX - rect.left ) * canvas.width / rect.width,
+			y: ( event.clientY - rect.top ) * canvas.height / rect.height,
+		};
+
+	}
+
+	function setPickPosition( event ) {
+
+		const pos = getCanvasRelativePosition( event );
+		pickPosition.x = ( pos.x / canvas.width ) * 2 - 1;
+		pickPosition.y = ( pos.y / canvas.height ) * - 2 + 1; // note we flip Y
+
+	}
+
+	function clearPickPosition() {
+
+		// unlike the mouse which always has a position
+		// if the user stops touching the screen we want
+		// to stop picking. For now we just pick a value
+		// unlikely to pick something
+		pickPosition.x = - 100000;
+		pickPosition.y = - 100000;
+
+	}
+
+	window.addEventListener( 'mousemove', setPickPosition );
+	window.addEventListener( 'mouseout', clearPickPosition );
+	window.addEventListener( 'mouseleave', clearPickPosition );
+
+	window.addEventListener( 'touchstart', ( event ) => {
+
+		// prevent the window from scrolling
+		event.preventDefault();
+		setPickPosition( event.touches[ 0 ] );
+
+	}, { passive: false } );
+
+	window.addEventListener( 'touchmove', ( event ) => {
+
+		setPickPosition( event.touches[ 0 ] );
+
+	} );
+
+	window.addEventListener( 'touchend', clearPickPosition );
+
 }
 
 main();
@@ -364,18 +423,33 @@ function CreateSpotLight(orbit, intensity, position, hieght = 0, color = 0xFFFFF
     light.position.set(position, hieght, 0); // Set light’s position slightly above and behind Saturn
     light.target.position.set(position + 1, 0, 0); // Ensure the light points at Saturn
     orbit.add(light);
-    orbit.add(light.target); // Important: Add target so it moves with the orbit
+    orbit.add(light.target);
 }
 
-function load3dObj(scene, objPath, mtlPath, scale = [1, 1, 1], translate = [0, 0, 0]) {
+function load3dObj(scene, name, objPath, mtlPath, scale = [1, 1, 1], translate = [0, 0, 0]) {
     const mtlLoader = new MTLLoader();
     mtlLoader.load(mtlPath, (mtl) => {
         mtl.preload();
         const objLoader = new OBJLoader();
         objLoader.setMaterials(mtl);
         objLoader.load(objPath, (root) => {
+            root.name = name;
             root.scale.set(scale[0], scale[1], scale[2]);
             root.position.set(translate[0], translate[1], translate[2]);
+
+            let named = false; // Track if at least one mesh was named
+
+            root.traverse((child) => {
+                if (child.isMesh && !named) {
+                    child.name = name; // Assign the name to the first mesh found
+                    console.log(`Mesh assigned name: ${child.name}`);
+                    named = true; // Stop after naming the first mesh
+                }
+            });
+
+            if (!named) {
+                console.warn(`No mesh found in ${name}, setting root name only.`);
+            }
 
             // If this is the Sun, force `MeshBasicMaterial` to prevent lighting effects
             if (objPath.includes("sun")) {
@@ -393,32 +467,29 @@ function load3dObj(scene, objPath, mtlPath, scale = [1, 1, 1], translate = [0, 0
     });
 }
 
-function createPlanet(scene, size, texture, position, ring) {
+function createPlanet(scene, name, size, texture, position, ring) {
     const geo = new THREE.SphereGeometry(size, 30, 30);
     const textureLoader = new THREE.TextureLoader();
     const mat = new THREE.MeshStandardMaterial({
         map: textureLoader.load(texture)
     });
     const mesh = new THREE.Mesh(geo, mat);
+    mesh.name = name;
+
     const obj = new THREE.Object3D();
+    obj.name = name; // Assign the name to the entire planet object
     obj.add(mesh);
 
     if (ring) {
-        const ringGeo = new THREE.RingGeometry(
-            ring.innerRadius,
-            ring.outerRadius,
-            64
-        );
+        const ringGeo = new THREE.RingGeometry(ring.innerRadius, ring.outerRadius, 64);
         const ringMat = new THREE.MeshStandardMaterial({
             map: textureLoader.load(ring.texture),
             side: THREE.DoubleSide,
             transparent: true
         });
         const ringMesh = new THREE.Mesh(ringGeo, ringMat);
-        
         ringMesh.position.set(0, 0, 0);
         ringMesh.rotation.x = -Math.PI / 2;
-
         obj.add(ringMesh);
     }
 
@@ -488,4 +559,41 @@ function makeLabelCanvas(baseWidth, size, name, color, rect) {
     ctx.fillText(name, width / 2, height / 2);
 
     return ctx.canvas;
+}
+
+function createGlowSprite(scene, location, size) {
+    // Create a circular canvas texture
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+
+    // Draw a soft glowing circle
+    const gradient = ctx.createRadialGradient(128, 128, 30, 128, 128, 128);
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.8)');  // Bright center
+    gradient.addColorStop(1, 'rgba(255, 255, 255, 0)');    // Fade out
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.arc(128, 128, 128, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Convert to a texture
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.needsUpdate = true;
+
+    // Create a sprite
+    const spriteMaterial = new THREE.SpriteMaterial({ map: texture, transparent: true });
+    const sprite = new THREE.Sprite(spriteMaterial);
+
+    // Set position and size
+    sprite.position.set(location, 0, 0);
+    sprite.scale.set(size, size, 1);
+    sprite.visible = false; // Default: Hidden until hovered
+
+    // Add glow sprite to the scene (not parented to planets)
+    scene.add(sprite);
+
+    return sprite; // Return the created sprite
 }
