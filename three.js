@@ -1,4 +1,5 @@
 // Credits
+// SpaceShip Hud Provided by EdgeC https://www.deviantart.com/edgec/art/Dragonclaw-Armor-HUD-341243746
 // Spaceship Model Provided by javier8 https://free3d.com/3d-model/low-poly-spaceship-37605.html
 // Sun Model Provided by printable_models https://free3d.com/3d-model/sun-v2--446713.html
 // Mercury Model Provided by gerhald3d https://free3d.com/3d-model/mercury-photorealistic-1k-260439.html
@@ -15,6 +16,7 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { OBJLoader } from 'three/addons/loaders/OBJLoader.js';
 import { MTLLoader } from 'three/addons/loaders/MTLLoader.js';
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 function main() 
 {
@@ -35,47 +37,84 @@ function main()
 	const scene = new THREE.Scene();
 	scene.background = new THREE.Color( 'black' );
 
-    let cameraSwap = false;
-
-    let pauseOrbits = false;
-    let pauseRotations = false;
-
-    let numMult = 0;
     let orbitalSpeed = 0.00001;
     let rotationSpeed = 365.25 * orbitalSpeed;
-    let planetSpeeds = 1;
+    
+    const settings = { 
+        planetSpeeds: 1,
+        orbitsPaused: false,
+        rotationsPaused: false,
+        cameraSwap: false,
+        planetLabels: true,
+        hudOpacity: 0.5,
 
+        orbits: "Pause Orbits",
+        rotations: "Pause Rotations",
+        labels: "Hide Planet Labels",
+        camera: "Ship View",
+    
+        pauseOrbits: function() {
+            settings.orbitsPaused = !settings.orbitsPaused;
+            settings.orbits = settings.orbitsPaused ? "Resume Orbits" : "Pause Orbits";
+            updateGUI();
+        },
+    
+        pauseRotations: function() {
+            settings.rotationsPaused = !settings.rotationsPaused;
+            settings.rotations = settings.rotationsPaused ? "Resume Rotations" : "Pause Rotations";
+            updateGUI();
+        },
+
+        showPlanetLabels: function() {
+            settings.planetLabels = !settings.planetLabels;
+            settings.labels = settings.planetLabels ? "Hide Planet Labels" : "Show Planet Labels";
+        
+            Object.values(planetLabels).forEach(label => {
+                label.visible = settings.planetLabels;
+            });
+        
+            updateGUI();
+        },        
+
+        swapCameras: function() {
+            settings.cameraSwap = !settings.cameraSwap;
+            settings.camera = settings.cameraSwap ? "Space View" : "Ship View";
+            overlayPlane.visible = settings.cameraSwap? true : false;
+            updateGUI();
+        }
+    };
+    const gui = new GUI();
+
+    // Create a folder for planet controls
+    const planetFolder = gui.addFolder('Planet Controls');
+    planetFolder.add(settings, 'planetSpeeds', 0, 5000).name("Fast Forward");
+    const orbitsControl = planetFolder.add(settings, 'pauseOrbits').name(settings.orbits);
+    const rotationsControl = planetFolder.add(settings, 'pauseRotations').name(settings.rotations);
+    const labelControl = planetFolder.add(settings, 'showPlanetLabels').name(settings.labels);
+    planetFolder.open(); // Open by default (optional)
+    
+    // Create a separate folder for camera & HUD controls
+    const cameraHUDfolder = gui.addFolder('Camera & HUD');
+    const cameraControl = cameraHUDfolder.add(settings, 'swapCameras').name(settings.camera);
+    cameraHUDfolder.add(settings, 'hudOpacity', 0, 1, 0.05).name("Ship HUD Opacity").onChange((value) => {
+        overlayMaterial.opacity = value;
+    });
+    cameraHUDfolder.open(); // Open by default (optional)
+    
+    // Function to update GUI element names dynamically
+    function updateGUI() {
+        orbitsControl.name(settings.orbits);
+        rotationsControl.name(settings.rotations);
+        labelControl.name(settings.labels);
+        cameraControl.name(settings.camera);
+    }
+    
 	{
 		const color = 0xFFFFFF;
 		const intensity = 0.005;
 		const light = new THREE.AmbientLight( color, intensity );
 		scene.add( light );
 	}
-
-    document.addEventListener("keydown", (event) => {
-        switch (event.code) {
-            case "KeyO": // Pause orbits
-                pauseOrbits =! pauseOrbits;
-                break;
-            case "KeyR": // Pause rotations
-                pauseRotations =! pauseRotations;
-                break;
-            case "KeyF":
-                planetSpeeds = planetSpeeds * 4;
-                numMult++;
-                if(numMult > 5)
-                {
-                    planetSpeeds = 1;
-                    numMult = 0
-                }
-                console.log({planetSpeeds});
-                break;
-            case "KeyC":
-                cameraSwap =! cameraSwap;
-                console.log(cameraSwap);
-                break;
-        }
-    });
 
 	{
 		const loader = new THREE.CubeTextureLoader();
@@ -123,7 +162,6 @@ function main()
     spaceShip.rotation.y = 19.5;
 	scene.add( spaceShip );
 
-    //CreateSpotLight(spaceShip, 50, 0, 1);
 	{
 		const color = 0xFFFFFF;
 		const intensity = 3;
@@ -135,6 +173,31 @@ function main()
     const rotationObj = new THREE.Group();
     rotationObj.rotateY(1.5);
     spaceShip.add(rotationObj);
+
+    const textureLoader = new THREE.TextureLoader();
+    const overlayMaterial = new THREE.MeshBasicMaterial({ 
+        map: null,  // Start with null until texture loads
+        transparent: true, 
+        opacity: settings.hudOpacity,
+        side: THREE.DoubleSide 
+    });
+    
+    const overlayGeometry = new THREE.PlaneGeometry(3, 1.5);
+    overlayGeometry.attributes.uv.needsUpdate = true; // Ensure correct mapping
+    
+    const overlayPlane = new THREE.Mesh(overlayGeometry, overlayMaterial);
+    overlayPlane.position.set(2, 0, 0);
+    overlayPlane.rotateY(1.6);
+    overlayPlane.visible = false;
+    overlayPlane.raycast = () => {}; // Disables raycasting on the overlay
+    spaceShip.add(overlayPlane);
+    
+    // Load texture and apply it
+    textureLoader.load('images/spaceShipHud.png', function(texture) {
+        overlayMaterial.map = texture;
+        overlayMaterial.needsUpdate = true;
+    });
+
 
     const spaceshipObj = `objects/spaceship/spaceship.obj`;
     const spaceshipMtl = `objects/spaceship/spaceship.mtl`;
@@ -194,78 +257,87 @@ function main()
         // Apply drag to gradually slow down
         velocity.multiplyScalar(dragFactor);
     }
+    const planetData = [
+        { name: "sun", distance: 0 },
+        { name: "mercury", distance: 20 },
+        { name: "venus", distance: 30 },
+        { name: "earth", distance: 40 },
+        { name: "mars", distance: 50 },
+        { name: "jupiter", distance: 100 },
+        { name: "saturn", distance: 120 },
+        { name: "uranus", distance: 140 },
+        { name: "neptune", distance: 160 },
 
+        { name: "astroid", distance: 0 },
+        { name: "kupier", distance: 0 },
+    ];
+    
+    // Store references in an object
+    const planetGroups = {};
+    
+    planetData.forEach(planet => {
+        const orbit = new THREE.Group();        // Main orbit container
+        const location = new THREE.Group();     // Holds the planet's position
+        const rotation = new THREE.Group();     // Handles planet rotation
+    
+        location.position.set(planet.distance, 0, 0); // Set the orbital distance
+    
+        // Structure:
+        // orbit -> location -> rotation (which holds the planet model)
+        orbit.add(location);
+        location.add(rotation);
+    
+        // Store references for easy access later
+        planetGroups[planet.name] = { orbit, location, rotation };
+    
+        // Add to the scene
+        scene.add(orbit);
+    });
+    
+    // Example: Accessing Earth’s elements
+    //const earthOrbit = planetGroups["earth"].orbit;
+    //const earthLocation = planetGroups["earth"].location;    
+    //const earthRotation = planetGroups["earth"].rotation;
 
-    const sunOrbit = new THREE.Group();
-    const mercuryOrbit = new THREE.Group();
-    const earthOrbit = new THREE.Group();
-    const venusOrbit = new THREE.Group();
-    const marsOrbit = new THREE.Group();
-    const astroidOrbit = new THREE.Group();
-    const jupiterOrbit = new THREE.Group();
-    const saturnOrbit = new THREE.Group();
-    const uranusOrbit = new THREE.Group();
-    const neptuneOrbit = new THREE.Group();
-    scene.add(sunOrbit, mercuryOrbit, venusOrbit, earthOrbit, marsOrbit, astroidOrbit, jupiterOrbit, saturnOrbit, uranusOrbit, neptuneOrbit);
+    const astroidBelt = createAstroids(planetGroups["astroid"].location, 5000, 70, 90);    
+    const kuiperBelt = createAstroids(planetGroups["kupier"].location, 10000, 175, 200);    
 
     const sunObj = `objects/sun/sun.obj`;
     const sunMtl = `objects/sun/sun.mtl`;
-    load3dObj(sunOrbit, "sun", sunObj, sunMtl, 0.5, [0, 0, 0], false);
-	makeLabel(scene, 0, 15, 1000, 200, 'Sun', 'black', false );
-    createGlowSprite(sunOrbit, 0, 30);
+    load3dObj(planetGroups["sun"].rotation, "sun", sunObj, sunMtl, 0.5, [0, 0, 0], false);
+    createGlowSprite(planetGroups["sun"].location, 0, 30);
 
-    CreateSpotLight(mercuryOrbit, 30, 16);
+    CreateSpotLight(planetGroups["mercury"].location, 30, -4);
     const mercury = `objects/mercury/mercury.obj`;
     const mercuryMtl = `objects/mercury/mercury.mtl`;
-    load3dObj(mercuryOrbit, "mercury", mercury, mercuryMtl, 1.0, [20, 0, 0]);
-	makeLabel(mercuryOrbit, 20, 3, 1000, 200, 'Mercury', 'black', false );
+    const mercuryObj = load3dObj(planetGroups["mercury"].rotation, "mercury", mercury, mercuryMtl, 1.0, [0, 0, 0]);
 
-    CreateSpotLight(venusOrbit, 10, 28, );
+    CreateSpotLight(planetGroups["venus"].location, 10, -2);
     const venus = `objects/venus/venus.obj`;
     const venusMtl = `objects/venus/venus.mtl`;
-    load3dObj(venusOrbit, "venus", venus, venusMtl, 3.0, [30, 0, 0]);
-	makeLabel(venusOrbit, 30, 3, 1000, 200, 'Venus', 'black', false );
+    const venusObj = load3dObj(planetGroups["venus"].rotation, "venus", venus, venusMtl, 3.0, [0, 0, 0]);
 
-    CreateSpotLight(earthOrbit, 10, 38);
+    CreateSpotLight(planetGroups["earth"].location, 10, -2);
     const earthTexture = 'objects/earth/Color_Map.jpg';
-    const earth = createPlanet(earthOrbit, "earth", 0.7, earthTexture, 40);
-    makeLabel(earthOrbit, 40, 3, 1000, 200, 'Earth', 'black', false );
+    const earth = createPlanet(planetGroups["earth"].rotation, "earth", 0.7, earthTexture, 0);
 
-    CreateSpotLight(marsOrbit, 5, 48);
+    CreateSpotLight(planetGroups["mars"].location, 5, -2);
     const mars = `objects/mars/mars.obj`;
     const marsMtl = `objects/mars/mars.mtl`;
-    load3dObj(marsOrbit, "mars", mars, marsMtl, 2.0, [50, 0, 0]);
-    makeLabel(marsOrbit, 50, 3, 1000, 200, 'Mars', 'black', false );
+    const marsObj = load3dObj(planetGroups["mars"].rotation, "mars", mars, marsMtl, 2.0, [0, 0, 0]);
 
-    const asteroidCount = 2000;   // Number of asteroids
-    const innerRadius = 60;       // Inner radius of the belt
-    const outerRadius = 80;       // Outer radius of the belt
     
-    for (let i = 0; i < asteroidCount; i++) {
-        const size = Math.random() * 0.08 + 0.01;
-        const angle = Math.random() * Math.PI * 2; // Random angle (0 to 360 degrees)
-        const radius = innerRadius + Math.random() * (outerRadius - innerRadius); // Random radius within belt
-        
-        const x = radius * Math.cos(angle);
-        const z = radius * Math.sin(angle);
-        const y = (Math.random() - 0.5) * 5; // Slight vertical variation for realism
-    
-        createAstroid(astroidOrbit, size, [x, y, z]);
-    }
-    
-
-    CreateSpotLight(jupiterOrbit, 50, 85);
+    CreateSpotLight(planetGroups["jupiter"].location, 50, -10);
     const jupiterTexture = 'objects/jupiter/jupitermap.jpg';
-    const jupiter = createPlanet(jupiterOrbit, "jupiter", 3, jupiterTexture, 95);
-    makeLabel(jupiterOrbit, 95, 8, 1000, 200, 'Jupiter', 'black', false );
+    const jupiter = createPlanet(planetGroups["jupiter"].rotation, "jupiter", 3, jupiterTexture);
 
-    CreateSpotLight(saturnOrbit, 50, 100, 1);
+    CreateSpotLight(planetGroups["saturn"].location, 50, -15, 1);
     const saturnTexture = 'objects/saturn/saturnmap.jpg';
     const saturnRingTexture = 'objects/saturn/saturnring.png';
     
     const saturnTiltGroup = new THREE.Group();
-    saturnTiltGroup.position.set(115, 0, 0); 
-    saturnOrbit.add(saturnTiltGroup);        
+    saturnTiltGroup.position.set(0, 0, 0); 
+    planetGroups["saturn"].rotation.add(saturnTiltGroup);        
     
     const saturn = createPlanet(saturnTiltGroup, "saturn", 3, saturnTexture, 0, {
         innerRadius: 4,
@@ -274,16 +346,15 @@ function main()
     });
     
     saturnTiltGroup.rotation.z = THREE.MathUtils.degToRad(27);
-    makeLabel(saturnOrbit, 115, 8, 1000, 200, 'Saturn', 'black', false );
 
 
-    CreateSpotLight(uranusOrbit, 40, 125, 1);
+    CreateSpotLight(planetGroups["uranus"].location, 40, -10, 1);
     const uranusTexture = 'objects/uranus/uranus.jpg';
     const uranusRingTexture = 'objects/uranus/uranusring.png';
     
     const uranusTiltGroup = new THREE.Group();
-    uranusTiltGroup.position.set(135, 0, 0); 
-    uranusOrbit.add(uranusTiltGroup);        
+    uranusTiltGroup.position.set(0, 0, 0); 
+    planetGroups["uranus"].rotation.add(uranusTiltGroup);        
     
     const uranus = createPlanet(uranusTiltGroup, "uranus", 3, uranusTexture, 0, {
         innerRadius: 4,
@@ -292,23 +363,22 @@ function main()
     });
     
     uranusTiltGroup.rotation.z = THREE.MathUtils.degToRad(90);
-    makeLabel(uranusOrbit, 135, 8, 1000, 200, 'Uranus', 'black', false );
 
 
-    CreateSpotLight(neptuneOrbit, 50, 145);
+    CreateSpotLight(planetGroups["neptune"].location, 50, -15);
     const neptuneTexture = 'objects/neptune/neptune.jpg';
-    const neptune = createPlanet(neptuneOrbit, "neptune", 3, neptuneTexture, 155);
-    makeLabel(neptuneOrbit, 155, 8, 1000, 200, 'Neptune', 'black', false );
+    const neptune = createPlanet(planetGroups["neptune"].rotation, "neptune", 3, neptuneTexture, 0);
 
-    const sunGlow = createGlowSprite(scene, 0, 30);
-    const mercuryGlow = createGlowSprite(mercuryOrbit, 20, 1);
-    const venusGlow = createGlowSprite(venusOrbit, 30, 2.5);
-    const earthGlow = createGlowSprite(earthOrbit, 40, 2.5);
-    const marsGlow = createGlowSprite(marsOrbit, 50, 2);
-    const jupiterGlow = createGlowSprite(jupiterOrbit, 95, 9);
-    const saturnGlow = createGlowSprite(saturnOrbit, 115, 9);
-    const uranusGlow = createGlowSprite(uranusOrbit, 135, 9);
-    const neptuneGlow = createGlowSprite(neptuneOrbit, 155, 9);
+
+    const sunGlow = createGlowSprite(planetGroups["sun"].location, 0, 30);
+    const mercuryGlow = createGlowSprite(planetGroups["mercury"].location, 0, 1);
+    const venusGlow = createGlowSprite(planetGroups["venus"].location, 0, 2.5);
+    const earthGlow = createGlowSprite(planetGroups["earth"].location, 0, 2.5);
+    const marsGlow = createGlowSprite(planetGroups["mars"].location, 0, 2);
+    const jupiterGlow = createGlowSprite(planetGroups["jupiter"].location, 0, 9);
+    const saturnGlow = createGlowSprite(planetGroups["saturn"].location, 0, 9);
+    const uranusGlow = createGlowSprite(planetGroups["uranus"].location, 0, 9);
+    const neptuneGlow = createGlowSprite(planetGroups["neptune"].location, 0, 9);
 
     const glowSprites = {
         sun: sunGlow,
@@ -321,6 +391,25 @@ function main()
         uranus: uranusGlow,
         neptune: neptuneGlow
     };
+
+    const planetLabels = {
+        sun: makeLabel(planetGroups["sun"].location, 0, 15, 1000, 200, 'Sun', 'black', false),
+        mercury: makeLabel(planetGroups["mercury"].location, 0, 3, 1000, 200, 'Mercury', 'black', false),
+        venus: makeLabel(planetGroups["venus"].location, 0, 3, 1000, 200, 'Venus', 'black', false),
+        earth: makeLabel(planetGroups["earth"].location, 0, 3, 1000, 200, 'Earth', 'black', false),
+        mars: makeLabel(planetGroups["mars"].location, 0, 3, 1000, 200, 'Mars', 'black', false),
+        jupiter: makeLabel(planetGroups["jupiter"].location, 0, 8, 1000, 200, 'Jupiter', 'black', false),
+        saturn: makeLabel(planetGroups["saturn"].location, 0, 8, 1000, 200, 'Saturn', 'black', false),
+        uranus: makeLabel(planetGroups["uranus"].location, 0, 8, 1000, 200, 'Uranus', 'black', false),
+        neptune: makeLabel(planetGroups["neptune"].location, 0, 8, 1000, 200, 'Neptune', 'black', false),
+    };
+    
+    // Ensure all labels exist before updating visibility
+    Object.keys(planetLabels).forEach(key => {
+        if (!planetLabels[key]) {
+            console.warn(`Missing label for: ${key}`);
+        }
+    });
 
     class PickHelper {
         constructor() {
@@ -354,46 +443,49 @@ function main()
 
 	function render(time) 
     {
+        let planetSpeeds = settings.planetSpeeds;
+        
         updateSpaceshipMovement();
 
         // Realistic orbital speeds
-        if(!pauseOrbits)
+        if(!settings.orbitsPaused)
         {
-            mercuryOrbit.rotation.y += (orbitalSpeed / 0.24) * planetSpeeds;  // Mercury orbits in 0.24 Earth years
-            venusOrbit.rotation.y += (orbitalSpeed / 0.62) * planetSpeeds;    // Venus orbits in 0.62 Earth years
-            earthOrbit.rotation.y += (orbitalSpeed / 1.00) * planetSpeeds;    // Earth orbits in 1 year
-            marsOrbit.rotation.y += (orbitalSpeed / 1.88) * planetSpeeds;     // Mars orbits in 1.88 Earth years
-            astroidOrbit.rotation.y += (orbitalSpeed / 4) * planetSpeeds;
+            planetGroups["mercury"].orbit.rotation.y += (orbitalSpeed / 0.24) * planetSpeeds;  // Mercury orbits in 0.24 Earth years
+            planetGroups["venus"].orbit.rotation.y += (orbitalSpeed / 0.62) * planetSpeeds;    // Venus orbits in 0.62 Earth years
+            planetGroups["earth"].orbit.rotation.y += (orbitalSpeed / 1.00) * planetSpeeds;    // Earth orbits in 1 year
+            planetGroups["mars"].orbit.rotation.y += (orbitalSpeed / 1.88) * planetSpeeds;     // Mars orbits in 1.88 Earth years
+            planetGroups["jupiter"].orbit.rotation.y += (orbitalSpeed / 11.86) * planetSpeeds; // Jupiter orbits in 11.86 Earth years
 
-            jupiterOrbit.rotation.y += (orbitalSpeed / 11.86) * planetSpeeds; // Jupiter orbits in 11.86 Earth years
-
-            saturnOrbit.rotation.y += (orbitalSpeed / 29.45) * planetSpeeds;  // Saturn orbits in 29.45 Earth years
+            planetGroups["saturn"].orbit.rotation.y += (orbitalSpeed / 29.45) * planetSpeeds;  // Saturn orbits in 29.45 Earth years
             saturnTiltGroup.rotation.y -= 1/29.45 * planetSpeeds * orbitalSpeed;
 
-            uranusOrbit.rotation.y += (orbitalSpeed / 84.00) * planetSpeeds;  // Uranus orbits in 84 Earth years
+            planetGroups["uranus"].orbit.rotation.y += (orbitalSpeed / 84.00) * planetSpeeds;  // Uranus orbits in 84 Earth years
             uranusTiltGroup.rotation.y -= 1/84.00 * planetSpeeds * orbitalSpeed;
 
-            neptuneOrbit.rotation.y += (orbitalSpeed / 165.00) * planetSpeeds;// Neptune orbits in 165 Earth years
+            planetGroups["neptune"].orbit.rotation.y += (orbitalSpeed / 165.00) * planetSpeeds;// Neptune orbits in 165 Earth years
+            
+            planetGroups["astroid"].orbit.rotation.y += (orbitalSpeed / 2) * planetSpeeds;
+            planetGroups["kupier"].orbit.rotation.y += (orbitalSpeed / 4) * planetSpeeds;
         }
 
         // Rotate all planets inside their orbits (spinning on axis)
-        if(!pauseRotations)
+        if(!settings.rotationsPaused)
         {
-            sunOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed / 30 * planetSpeeds);
-            mercuryOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed / 58.6 * planetSpeeds);
-            venusOrbit.children.forEach(obj => obj.rotation.y -= rotationSpeed / 243 * planetSpeeds);
-            earthOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed * planetSpeeds);
-            marsOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed / 1.03 * planetSpeeds);
-            jupiterOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed / 0.41 * planetSpeeds);
+            planetGroups["sun"].rotation.children.forEach(obj => obj.rotation.y += rotationSpeed / 30 * planetSpeeds);
+            planetGroups["mercury"].rotation.children.forEach(obj => obj.rotation.y += rotationSpeed / 58.6 * planetSpeeds);
+            planetGroups["venus"].rotation.children.forEach(obj => obj.rotation.y -= rotationSpeed / 243 * planetSpeeds);
+            planetGroups["earth"].rotation.children.forEach(obj => obj.rotation.y += rotationSpeed * planetSpeeds);
+            planetGroups["mars"].rotation.children.forEach(obj => obj.rotation.y += rotationSpeed / 1.03 * planetSpeeds);
+            planetGroups["jupiter"].rotation.children.forEach(obj => obj.rotation.y += rotationSpeed / 0.41 * planetSpeeds);
             saturn.obj.rotation.y += rotationSpeed / 0.44 * planetSpeeds;
             uranus.obj.rotation.y += rotationSpeed / 0.72 * planetSpeeds;
 
-            //uranusOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed / 0.72 * planetSpeeds);
-            neptuneOrbit.children.forEach(obj => obj.rotation.y += rotationSpeed / 0.67 * planetSpeeds);
+            planetGroups["uranus"].rotation.children.forEach(obj => obj.rotation.x += rotationSpeed / 0.72 * planetSpeeds);
+            planetGroups["neptune"].rotation.children.forEach(obj => obj.rotation.y += rotationSpeed / 0.67 * planetSpeeds);
         }
 
         let whichCamera = camera;
-        if(cameraSwap)
+        if(settings.cameraSwap)
         {
             whichCamera = camera2;
         }
@@ -521,7 +613,7 @@ function load3dObj(scene, name, objPath, mtlPath, scale = 1, translate = [0, 0, 
     });
 }
 
-function createPlanet(scene, name, size, texture, position, ring) {
+function createPlanet(scene, name, size, texture, position = 0, ring) {
     const geo = new THREE.SphereGeometry(size, 30, 30);
     const textureLoader = new THREE.TextureLoader();
     const mat = new THREE.MeshStandardMaterial({
@@ -550,6 +642,33 @@ function createPlanet(scene, name, size, texture, position, ring) {
     obj.position.set(position, 0, 0);
     scene.add(obj);
     return { mesh, obj };
+}
+
+function createAstroids(scene, count, innerRadius, outerRadius) {
+    const geometry = new THREE.SphereGeometry(0.1, 3, 3); // Low-poly asteroid
+    const material = new THREE.MeshBasicMaterial({ color: 0x888888 });
+
+    // Instanced mesh for performance
+    const kuiperBelt = new THREE.InstancedMesh(geometry, material, count);
+    
+    const dummy = new THREE.Object3D(); // Dummy object for transformations
+
+    for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2; // Random angle
+        const radius = innerRadius + Math.random() * (outerRadius - innerRadius); // Random radius
+        
+        const x = radius * Math.cos(angle);
+        const z = radius * Math.sin(angle);
+        const y = (Math.random() - 0.5) * 5; // Small vertical variation
+
+        // Apply transformations using dummy object
+        dummy.position.set(x, y, z);
+        dummy.updateMatrix();
+        kuiperBelt.setMatrixAt(i, dummy.matrix);
+    }
+
+    scene.add(kuiperBelt);
+    return kuiperBelt;
 }
 
 function createAstroid(scene, size, position, texture = null)
