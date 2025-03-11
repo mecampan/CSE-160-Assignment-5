@@ -164,9 +164,9 @@ function main()
 
 	{
 		const color = 0xFFFFFF;
-		const intensity = 3;
+		const intensity = 10;
 		const light = new THREE.PointLight( color, intensity );
-        light.position.set(0, 0, 1);
+        light.position.set(0, 2, 1);
 		spaceShip.add( light );
 	}
 
