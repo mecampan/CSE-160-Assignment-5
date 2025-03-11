@@ -360,7 +360,7 @@ function main()
     uranusTiltGroup.rotation.z = THREE.MathUtils.degToRad(90);
 
 
-    CreateSpotLight(planetGroups["neptune"].location, 50, -15);
+    CreateSpotLight(planetGroups["neptune"].location, 50, -10);
     const neptuneTexture = 'objects/neptune/neptune.jpg';
     const neptune = createPlanet(planetGroups["neptune"].rotation, "neptune", 3, neptuneTexture, 0);
 
