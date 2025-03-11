@@ -293,11 +293,6 @@ function main()
         // Add to the scene
         scene.add(orbit);
     });
-    
-    // Example: Accessing Earth’s elements
-    //const earthOrbit = planetGroups["earth"].orbit;
-    //const earthLocation = planetGroups["earth"].location;    
-    //const earthRotation = planetGroups["earth"].rotation;
 
     const astroidBelt = createAstroids(planetGroups["astroid"].location, 5000, 70, 90);    
     const kuiperBelt = createAstroids(planetGroups["kupier"].location, 10000, 175, 200);    
@@ -645,7 +640,7 @@ function createPlanet(scene, name, size, texture, position = 0, ring) {
 }
 
 function createAstroids(scene, count, innerRadius, outerRadius) {
-    const geometry = new THREE.SphereGeometry(0.1, 3, 3); // Low-poly asteroid
+    const geometry = new THREE.DodecahedronGeometry(0.1); // Low-poly asteroid
     const material = new THREE.MeshBasicMaterial({ color: 0x888888 });
 
     // Instanced mesh for performance
